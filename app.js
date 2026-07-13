@@ -161,6 +161,12 @@ function render(d){
   }
   html += '</div>';
 
+  if (isRep()){
+    html += '<div class="card"><h2 class="section">Amministrazione</h2>' +
+      '<button class="mini" onclick="generaMeseTurni()">➕ Genera mese successivo (turni)</button>' +
+      '<p class="muted" style="margin:8px 0 0">Crea il mese dopo quello attivo e lo rende attivo (come la voce di menu del foglio).</p></div>';
+  }
+
   el('content').innerHTML = html;
   aggiornaBadgeCambi(d.cambiPendenti || 0);
   aggiornaBadgeFerie(d.feriePendenti || 0);
@@ -215,6 +221,17 @@ function generaMese(){
   if (!confirm('Generare il mese successivo nel foglio ferie ufficiale? (copia dal mese più recente, ferie vuote)')){ return; }
   apiPost('generaMeseFerie', { repCode: localStorage.getItem(K_REP) || '' }).then(function(d){
     alert((d && d.messaggio) || 'Fatto.');
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    alert('Errore di collegamento.');
+  });
+}
+
+function generaMeseTurni(){
+  if (!confirm('Generare il MESE SUCCESSIVO nel file turni principale e renderlo ATTIVO? Verrà creato vuoto e diventerà il mese corrente dell\'app. (come la voce di menu del foglio)')){ return; }
+  apiPost('generaMeseTurni', { repCode: localStorage.getItem(K_REP) || '' }).then(function(d){
+    alert((d && d.messaggio) || 'Fatto.');
+    if (d && d.ok){ carica(); }
   }).catch(function(e){
     if (e && e.codice){ vaiACodice(e.messaggio); return; }
     alert('Errore di collegamento.');
