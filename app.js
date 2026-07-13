@@ -8,6 +8,7 @@ var API_BASE = 'https://script.google.com/macros/s/AKfycbzj4wCgMtsKajOdXttH7ghkX
 
 var K_CODE = 'turni3_code';
 var K_NOME = 'turni3_nome';
+var K_REP = 'turni3_rep'; // codice rappresentante salvato (per approvare i cambi)
 var lastTurni = []; // ultimi turni caricati, per pre-riempire il cambio
 
 function el(id){ return document.getElementById(id); }
@@ -178,7 +179,52 @@ function tab(which){
   show('tabHome', home); show('tabCambi', !home);
   el('tabBtnHome').classList.toggle('active', home);
   el('tabBtnCambi').classList.toggle('active', !home);
-  if (!home){ popolaCede(); caricaCambi(); }
+  if (!home){ popolaCede(); renderRepBar(); caricaCambi(); }
+}
+
+/* ---- Modalità rappresentante (approvazione cambi) ---- */
+function isRep(){ return !!localStorage.getItem(K_REP); }
+
+function renderRepBar(){
+  var b = el('repBar');
+  if (isRep()){
+    b.innerHTML = '<span class="muted">✅ Modalità rappresentante attiva — puoi approvare</span>' +
+      ' <button class="link" onclick="esciRep()">esci</button>';
+  } else {
+    b.innerHTML = '<button class="link" onclick="entraRep()">🔑 Sono un rappresentante (per approvare)</button>';
+  }
+}
+
+function entraRep(){
+  var c = prompt('Codice rappresentante:');
+  if (!c){ return; }
+  api('verificaRep', { repCode: c }).then(function(d){
+    if (d && d.rappresentante){
+      localStorage.setItem(K_REP, c);
+      renderRepBar(); caricaCambi();
+    } else {
+      alert('Codice rappresentante errato.');
+    }
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    alert('Errore di collegamento.');
+  });
+}
+
+function esciRep(){
+  localStorage.removeItem(K_REP);
+  renderRepBar(); caricaCambi();
+}
+
+function segnaFatto(riga, fatto){
+  apiPost('segnaCambio', { riga: riga, fatto: fatto, repCode: localStorage.getItem(K_REP) || '' })
+    .then(function(d){
+      if (!d || d.ok === false){ alert((d && d.messaggio) || 'Errore'); return; }
+      caricaCambi();
+    }).catch(function(e){
+      if (e && e.codice){ vaiACodice(e.messaggio); return; }
+      alert('Errore di collegamento.');
+    });
 }
 
 function popolaCede(){
@@ -256,10 +302,14 @@ function caricaCambi(){
       var badge = c.fatto ? '<span class="badge done">✅ Fatto</span>'
                           : '<span class="badge todo">⏳ Da fare</span>';
       var sw = (c.cede ? esc(c.cede) : '—') + '  →  ' + (c.riceve ? esc(c.riceve) : '—');
+      var azione = isRep()
+        ? '<button class="mini ' + (c.fatto ? '' : 'primary') + '" onclick="segnaFatto(' + c.riga + ',' + (c.fatto ? 'false' : 'true') + ')">' +
+            (c.fatto ? '↩︎ Segna da fare' : '✓ Segna fatto') + '</button>'
+        : '';
       return '<div class="camb"><div class="h">' + esc(c.richiedente) + ' ↔ ' + esc(c.conChi) +
         badge + '</div><div class="sw">' + sw + '</div>' +
         (c.nota ? '<div class="meta">📝 ' + esc(c.nota) + '</div>' : '') +
-        '<div class="meta">' + esc(c.data) + '</div></div>';
+        '<div class="meta">' + esc(c.data) + '</div>' + azione + '</div>';
     }).join('');
   }).catch(function(e){
     if (e && e.codice){ vaiACodice(e.messaggio); return; }

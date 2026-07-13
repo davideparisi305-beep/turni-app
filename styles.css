@@ -85,6 +85,11 @@ label:first-of-type{margin-top:0}
 .badge.todo{background:var(--warnbg);color:var(--warn)}
 .badge.done{background:#e7f4ec;color:#1e7a46}
 @media (prefers-color-scheme: dark){.badge.done{background:#173023}}
+.repbar{margin:0 0 10px;font-size:13px}
+.link{background:none;border:0;color:var(--brand);font-weight:600;padding:4px 0;font-size:13px}
+.mini{display:inline-block;margin-top:8px;padding:7px 12px;font-size:13px;border-radius:9px;
+  background:var(--line);color:var(--ink)}
+.mini.primary{background:var(--brand);color:#fff}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--line);
   border-top-color:var(--brand);border-radius:50%;animation:sp .8s linear infinite;
   vertical-align:middle;margin-right:6px}
