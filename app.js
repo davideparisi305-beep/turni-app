@@ -200,6 +200,25 @@ function renderRepBar(){
       ' <button class="link" onclick="esciRep()">esci</button>'
     : '<button class="link" onclick="entraRep()">🔑 Sono un rappresentante (per approvare)</button>';
   ['repBar', 'repBarFerie'].forEach(function(id){ var b = el(id); if (b){ b.innerHTML = html; } });
+  renderFerieAdmin();
+}
+
+// Bottone rep-only: genera il mese successivo nel foglio ferie ufficiale.
+function renderFerieAdmin(){
+  var a = el('ferieAdmin'); if (!a){ return; }
+  a.innerHTML = isRep()
+    ? '<button class="mini" onclick="generaMese()">➕ Genera mese successivo (foglio ferie)</button>'
+    : '';
+}
+
+function generaMese(){
+  if (!confirm('Generare il mese successivo nel foglio ferie ufficiale? (copia dal mese più recente, ferie vuote)')){ return; }
+  apiPost('generaMeseFerie', { repCode: localStorage.getItem(K_REP) || '' }).then(function(d){
+    alert((d && d.messaggio) || 'Fatto.');
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    alert('Errore di collegamento.');
+  });
 }
 
 function entraRep(){
