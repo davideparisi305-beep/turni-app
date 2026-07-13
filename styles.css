@@ -60,9 +60,15 @@ button.wide{width:100%;margin-top:12px}
   border-radius:12px;padding:4px;margin-bottom:14px}
 .tab{flex:1;background:transparent;color:var(--ink);font-weight:600;padding:10px}
 .tab.active{background:var(--brand);color:#fff}
+.pill{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;
+  background:var(--crit);color:#fff;border-radius:999px;font-size:12px;line-height:20px;
+  text-align:center;font-weight:700}
+.tab.active .pill{background:rgba(255,255,255,.35)}
 label{display:block;font-size:12px;color:var(--muted);margin-top:12px;
   text-transform:uppercase;letter-spacing:.4px}
 label:first-of-type{margin-top:0}
+.two{display:flex;gap:8px}
+.two>*{flex:1;min-width:0}
 .msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:14px}
 .msg.ok{background:#e7f4ec;color:#1e7a46}
 .msg.bad{background:#fdecea;color:var(--crit)}

@@ -54,16 +54,32 @@
       <div id="tabCambi" hidden>
         <div class="card">
           <h2 class="section">Nuova richiesta di cambio</h2>
-          <label>Cedo il mio turno</label>
-          <select id="cedePick" onchange="if(this.value){document.getElementById('cede').value=this.value;}">
-            <option value="">— pesca dai tuoi turni —</option>
-          </select>
-          <input id="cede" placeholder="es. SA 09/08 · DEA / MATTINA">
+
           <label>Con chi (anche altri anni)</label>
           <input id="conChi" placeholder="es. Rossi (2° anno)">
+
+          <label>Cedo il mio turno</label>
+          <select id="cedePick" onchange="pescaCede(this.value)">
+            <option value="">— pesca dai tuoi turni —</option>
+          </select>
+          <div class="two">
+            <input id="cedeDate" type="date">
+            <select id="cedeTurno">
+              <option value="">Turno…</option>
+              <option>Mattina</option><option>Pomeriggio</option><option>Notte</option>
+            </select>
+          </div>
+
           <label>Ricevo il suo turno</label>
-          <input id="riceve" placeholder="es. DO 10/08 · notte">
-          <label>Nota (facoltativa)</label>
+          <div class="two">
+            <input id="riceveDate" type="date">
+            <select id="riceveTurno">
+              <option value="">Turno…</option>
+              <option>Mattina</option><option>Pomeriggio</option><option>Notte</option>
+            </select>
+          </div>
+
+          <label>Nota (facoltativa: sala, dettagli)</label>
           <input id="nota" placeholder="">
           <button class="wide" onclick="inviaCambio()">Invia richiesta</button>
           <div id="cambioMsg" class="msg" hidden></div>

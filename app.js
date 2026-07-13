@@ -161,12 +161,18 @@ function render(d){
   html += '</div>';
 
   el('content').innerHTML = html;
+  aggiornaBadgeCambi(d.cambiPendenti || 0);
   var st = d.stato || {};
   el('foot').textContent = 'Periodo ' + (st.periodo ? st.periodo.inizio + ' → ' + st.periodo.fine : '') +
     (st.ultimoAggiornamento ? ' · agg. ' + st.ultimoAggiornamento : '');
 }
 
 /* ---- Cambi 1-1 ---- */
+function aggiornaBadgeCambi(n){
+  var b = el('tabBtnCambi');
+  b.innerHTML = 'Cambi' + (n > 0 ? ' <span class="pill">' + n + '</span>' : '');
+}
+
 function tab(which){
   var home = which === 'home';
   show('tabHome', home); show('tabCambi', !home);
@@ -178,9 +184,36 @@ function tab(which){
 function popolaCede(){
   var sel = el('cedePick');
   sel.innerHTML = '<option value="">— pesca dai tuoi turni —</option>' +
-    lastTurni.map(function(x){
-      return '<option>' + esc(x.etichetta + ' · ' + x.sala + ' / ' + x.turno) + '</option>';
+    lastTurni.map(function(x, i){
+      return '<option value="' + i + '">' + esc(x.etichetta + ' · ' + x.sala + ' / ' + x.turno) + '</option>';
     }).join('');
+}
+
+// Selezionando un tuo turno riempio calendario + turno (e la sala nella nota).
+function pescaCede(i){
+  var x = lastTurni[i];
+  if (!x){ return; }
+  el('cedeDate').value = x.data; // formato YYYY-MM-DD = valore dell'input date
+  el('cedeTurno').value = turnoLabel(x.turno);
+  if (!el('nota').value && x.sala){ el('nota').value = x.sala; }
+}
+
+function turnoLabel(t){
+  t = String(t || '').toUpperCase();
+  return t === 'MATTINA' ? 'Mattina' : t === 'POMERIGGIO' ? 'Pomeriggio' : t === 'NOTTE' ? 'Notte' : '';
+}
+
+// "2026-08-09" -> "09/08/2026"
+function itDate(s){
+  var p = String(s || '').split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : (s || '');
+}
+
+function composeShift(dateVal, turnoVal){
+  var parts = [];
+  if (dateVal) { parts.push(itDate(dateVal)); }
+  if (turnoVal) { parts.push(turnoVal); }
+  return parts.join(' · ');
 }
 
 function msgCambio(t, ok){
@@ -194,18 +227,18 @@ function inviaCambio(){
   var payload = {
     richiedente: richiedente,
     conChi: el('conChi').value.trim(),
-    cede: el('cede').value.trim(),
-    riceve: el('riceve').value.trim(),
+    cede: composeShift(el('cedeDate').value, el('cedeTurno').value),
+    riceve: composeShift(el('riceveDate').value, el('riceveTurno').value),
     nota: el('nota').value.trim()
   };
   if (!payload.conChi){ msgCambio('Indica con chi fai il cambio.', false); return; }
-  if (!payload.cede && !payload.riceve){ msgCambio('Indica almeno un turno (che cedi o che ricevi).', false); return; }
+  if (!payload.cede && !payload.riceve){ msgCambio('Indica almeno un turno (giorno + turno): quello che cedi o quello che ricevi.', false); return; }
   msgCambio('Invio…', true);
   apiPost('registraCambio', payload).then(function(d){
     if (!d || d.ok === false){ msgCambio((d && d.messaggio) || 'Errore', false); return; }
     msgCambio(d.messaggio || 'Richiesta registrata.', true);
-    el('conChi').value = ''; el('cede').value = ''; el('riceve').value = '';
-    el('nota').value = ''; el('cedePick').value = '';
+    el('conChi').value = ''; el('cedeDate').value = ''; el('cedeTurno').value = '';
+    el('riceveDate').value = ''; el('riceveTurno').value = ''; el('nota').value = ''; el('cedePick').value = '';
     caricaCambi();
   }).catch(function(e){
     if (e && e.codice){ vaiACodice(e.messaggio); return; }
@@ -217,6 +250,7 @@ function caricaCambi(){
   el('cambiList').innerHTML = '<div class="muted"><span class="spin"></span> Carico…</div>';
   api('cambi', {}).then(function(d){
     var list = (d && d.cambi) || [];
+    aggiornaBadgeCambi(list.filter(function(c){ return !c.fatto; }).length);
     if (!list.length){ el('cambiList').innerHTML = '<div class="muted">Nessuna richiesta ancora.</div>'; return; }
     el('cambiList').innerHTML = list.map(function(c){
       var badge = c.fatto ? '<span class="badge done">✅ Fatto</span>'
