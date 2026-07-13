@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Turni III</title>
+  <meta name="theme-color" content="#0b3d91">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Turni III">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Turni III</h1>
+    <div class="sub" id="sub">Console del rappresentante</div>
+    <button id="menuBtn" class="ghost" onclick="apraImpostazioni()" hidden>⚙︎</button>
+  </header>
+
+  <main class="wrap">
+    <!-- Schermata codice d'accesso (primo avvio) -->
+    <section id="scrCode" class="card" hidden>
+      <h2>Codice d'accesso</h2>
+      <p class="muted">Inserisci il codice condiviso per usare l'app.</p>
+      <input id="code" type="password" inputmode="text" autocomplete="off" placeholder="Codice">
+      <button class="wide" onclick="salvaCodice()">Entra</button>
+      <div id="codeErr" class="err" hidden></div>
+    </section>
+
+    <!-- App -->
+    <section id="scrApp" hidden>
+      <div class="pick">
+        <select id="nome"><option value="">— scegli il tuo nome —</option></select>
+        <button onclick="carica()">Vedi</button>
+      </div>
+      <div id="content">
+        <div class="card"><div class="muted">Scegli il tuo nome per iniziare.</div></div>
+      </div>
+      <div class="foot" id="foot"></div>
+    </section>
+
+    <div id="boot" class="card"><div class="muted"><span class="spin"></span> Avvio…</div></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
