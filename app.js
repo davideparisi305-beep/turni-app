@@ -3,9 +3,8 @@
  * custom → nessun preflight CORS). L'accesso è protetto dal codice condiviso:
  * l'URL da solo non basta a leggere i dati. */
 
-// ⚠️ DA COLLEGARE: URL /exec della web app (deployment con accesso
-// "Chiunque, anche anonimo" + codice in CONFIG). Si imposta quando pubblichiamo.
-var API_BASE = 'https://script.google.com/macros/s/AKfycbz0JBPvHeANsFL-BS_oa7xZMTTakETbxyfc9CIqJ4de0gbyVrBKKmynJV8mInQNx9pI/exec';
+// URL /exec della web app (deployment anonimo protetto dal codice condiviso).
+var API_BASE = 'https://script.google.com/macros/s/AKfycbzj4wCgMtsKajOdXttH7ghkXfQkSjAgjfvkPaNbkUcX29oMZ35Md_u0OZsgy4LlPo7B/exec';
 
 var K_CODE = 'turni3_code';
 var K_NOME = 'turni3_nome';
