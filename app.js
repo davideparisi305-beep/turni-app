@@ -163,6 +163,7 @@ function render(d){
 
   el('content').innerHTML = html;
   aggiornaBadgeCambi(d.cambiPendenti || 0);
+  aggiornaBadgeFerie(d.feriePendenti || 0);
   var st = d.stato || {};
   el('foot').textContent = 'Periodo ' + (st.periodo ? st.periodo.inizio + ' → ' + st.periodo.fine : '') +
     (st.ultimoAggiornamento ? ' · agg. ' + st.ultimoAggiornamento : '');
@@ -174,25 +175,31 @@ function aggiornaBadgeCambi(n){
   b.innerHTML = 'Cambi' + (n > 0 ? ' <span class="pill">' + n + '</span>' : '');
 }
 
-function tab(which){
-  var home = which === 'home';
-  show('tabHome', home); show('tabCambi', !home);
-  el('tabBtnHome').classList.toggle('active', home);
-  el('tabBtnCambi').classList.toggle('active', !home);
-  if (!home){ popolaCede(); renderRepBar(); caricaCambi(); }
+function aggiornaBadgeFerie(n){
+  var b = el('tabBtnFerie');
+  b.innerHTML = 'Ferie' + (n > 0 ? ' <span class="pill">' + n + '</span>' : '');
 }
 
-/* ---- Modalità rappresentante (approvazione cambi) ---- */
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function tab(which){
+  ['home', 'cambi', 'ferie'].forEach(function(t){
+    show('tab' + cap(t), t === which);
+    el('tabBtn' + cap(t)).classList.toggle('active', t === which);
+  });
+  if (which === 'cambi'){ popolaCede(); renderRepBar(); caricaCambi(); }
+  if (which === 'ferie'){ renderRepBar(); caricaFerie(); }
+}
+
+/* ---- Modalità rappresentante (approvazione cambi e ferie) ---- */
 function isRep(){ return !!localStorage.getItem(K_REP); }
 
 function renderRepBar(){
-  var b = el('repBar');
-  if (isRep()){
-    b.innerHTML = '<span class="muted">✅ Modalità rappresentante attiva — puoi approvare</span>' +
-      ' <button class="link" onclick="esciRep()">esci</button>';
-  } else {
-    b.innerHTML = '<button class="link" onclick="entraRep()">🔑 Sono un rappresentante (per approvare)</button>';
-  }
+  var html = isRep()
+    ? '<span class="muted">✅ Modalità rappresentante attiva — puoi approvare</span>' +
+      ' <button class="link" onclick="esciRep()">esci</button>'
+    : '<button class="link" onclick="entraRep()">🔑 Sono un rappresentante (per approvare)</button>';
+  ['repBar', 'repBarFerie'].forEach(function(id){ var b = el(id); if (b){ b.innerHTML = html; } });
 }
 
 function entraRep(){
@@ -201,7 +208,7 @@ function entraRep(){
   api('verificaRep', { repCode: c }).then(function(d){
     if (d && d.rappresentante){
       localStorage.setItem(K_REP, c);
-      renderRepBar(); caricaCambi();
+      renderRepBar(); caricaCambi(); caricaFerie();
     } else {
       alert('Codice rappresentante errato.');
     }
@@ -213,7 +220,7 @@ function entraRep(){
 
 function esciRep(){
   localStorage.removeItem(K_REP);
-  renderRepBar(); caricaCambi();
+  renderRepBar(); caricaCambi(); caricaFerie();
 }
 
 function segnaFatto(riga, fatto){
@@ -314,6 +321,79 @@ function caricaCambi(){
   }).catch(function(e){
     if (e && e.codice){ vaiACodice(e.messaggio); return; }
     el('cambiList').innerHTML = '<div class="msg bad">Errore nel caricare le richieste.</div>';
+  });
+}
+
+/* ---- Ferie ---- */
+function ferieMsg(t, ok){
+  var m = el('ferieMsg'); m.textContent = t; m.hidden = false;
+  m.className = 'msg ' + (ok ? 'ok' : 'bad');
+}
+
+function inviaFerie(){
+  var richiedente = el('nome').value;
+  if (!richiedente){ ferieMsg('Scegli prima il tuo nome nella scheda Home.', false); return; }
+  var dal = el('ferieDal').value, al = el('ferieAl').value;
+  if (!dal || !al){ ferieMsg('Scegli le date Dal e Al dal calendario.', false); return; }
+  ferieMsg('Invio…', true);
+  apiPost('richiediFerie', { richiedente: richiedente, dal: dal, al: al, nota: el('ferieNota').value.trim() })
+    .then(function(d){
+      if (!d || d.ok === false){ ferieMsg((d && d.messaggio) || 'Errore', false); return; }
+      ferieMsg(d.messaggio || 'Richiesta inviata.', true);
+      el('ferieDal').value = ''; el('ferieAl').value = ''; el('ferieNota').value = '';
+      caricaFerie();
+    }).catch(function(e){
+      if (e && e.codice){ vaiACodice(e.messaggio); return; }
+      ferieMsg('Errore: ' + (e && e.messaggio ? e.messaggio : e), false);
+    });
+}
+
+function caricaFerie(){
+  el('ferieList').innerHTML = '<div class="muted"><span class="spin"></span> Carico…</div>';
+  api('ferieRichieste', {}).then(function(d){
+    var list = (d && d.richieste) || [];
+    aggiornaBadgeFerie(list.filter(function(x){ return String(x.stato || '').toUpperCase().indexOf('ATTESA') >= 0; }).length);
+    if (!list.length){ el('ferieList').innerHTML = '<div class="muted">Nessuna richiesta ancora.</div>'; return; }
+    el('ferieList').innerHTML = list.map(function(x){
+      var st = String(x.stato || '').toUpperCase();
+      var badge = st.indexOf('APPROV') >= 0 ? '<span class="badge done">✅ Approvata</span>'
+                : st.indexOf('RIFIUT') >= 0 ? '<span class="badge todo">✖︎ Rifiutata</span>'
+                                            : '<span class="badge todo">⏳ In attesa</span>';
+      var azioni = (isRep() && st.indexOf('ATTESA') >= 0)
+        ? '<div class="two"><button class="mini primary" onclick="approvaFerie(' + x.riga + ')">✓ Approva</button>' +
+          '<button class="mini" onclick="rifiutaFerie(' + x.riga + ')">✖︎ Rifiuta</button></div>'
+        : '';
+      return '<div class="camb"><div class="h">' + esc(x.richiedente) + badge + '</div>' +
+        '<div class="sw">' + esc(x.dal) + ' → ' + esc(x.al) + ' · ' + esc(String(x.giorni)) + ' gg</div>' +
+        (x.nota ? '<div class="meta">📝 ' + esc(x.nota) + '</div>' : '') +
+        (x.esito ? '<div class="meta">' + esc(x.esito) + '</div>' : '') +
+        '<div class="meta">' + esc(x.data) + '</div>' + azioni + '</div>';
+    }).join('');
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    el('ferieList').innerHTML = '<div class="msg bad">Errore nel caricare le richieste.</div>';
+  });
+}
+
+function approvaFerie(riga){
+  if (!confirm('Approvare e scrivere le ferie nel foglio ufficiale?')){ return; }
+  apiPost('approvaFerie', { riga: riga, repCode: localStorage.getItem(K_REP) || '' }).then(function(d){
+    if (!d || d.ok === false){ alert((d && d.messaggio) || 'Errore'); return; }
+    alert(d.messaggio || 'Approvata.'); caricaFerie();
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    alert('Errore di collegamento.');
+  });
+}
+
+function rifiutaFerie(riga){
+  if (!confirm('Rifiutare la richiesta? (nessuna scrittura sul foglio ferie)')){ return; }
+  apiPost('rifiutaFerie', { riga: riga, repCode: localStorage.getItem(K_REP) || '' }).then(function(d){
+    if (!d || d.ok === false){ alert((d && d.messaggio) || 'Errore'); return; }
+    caricaFerie();
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    alert('Errore di collegamento.');
   });
 }
 

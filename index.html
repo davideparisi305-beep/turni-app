@@ -40,6 +40,7 @@
       <div class="tabs">
         <button id="tabBtnHome" class="tab active" onclick="tab('home')">Home</button>
         <button id="tabBtnCambi" class="tab" onclick="tab('cambi')">Cambi</button>
+        <button id="tabBtnFerie" class="tab" onclick="tab('ferie')">Ferie</button>
       </div>
 
       <!-- Scheda Home -->
@@ -88,6 +89,26 @@
           <h2 class="section">Richieste registrate</h2>
           <div id="repBar" class="repbar"></div>
           <div id="cambiList"><div class="muted">Carico…</div></div>
+        </div>
+      </div>
+
+      <!-- Scheda Ferie -->
+      <div id="tabFerie" hidden>
+        <div class="card">
+          <h2 class="section">Richiedi ferie</h2>
+          <label>Dal</label>
+          <input id="ferieDal" type="date">
+          <label>Al</label>
+          <input id="ferieAl" type="date">
+          <label>Nota (facoltativa)</label>
+          <input id="ferieNota" placeholder="">
+          <button class="wide" onclick="inviaFerie()">Invia richiesta ferie</button>
+          <div id="ferieMsg" class="msg" hidden></div>
+        </div>
+        <div class="card">
+          <h2 class="section">Richieste ferie</h2>
+          <div id="repBarFerie" class="repbar"></div>
+          <div id="ferieList"><div class="muted">Carico…</div></div>
         </div>
       </div>
     </section>
