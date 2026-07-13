@@ -36,10 +36,44 @@
         <select id="nome"><option value="">— scegli il tuo nome —</option></select>
         <button onclick="carica()">Vedi</button>
       </div>
-      <div id="content">
-        <div class="card"><div class="muted">Scegli il tuo nome per iniziare.</div></div>
+
+      <div class="tabs">
+        <button id="tabBtnHome" class="tab active" onclick="tab('home')">Home</button>
+        <button id="tabBtnCambi" class="tab" onclick="tab('cambi')">Cambi</button>
       </div>
-      <div class="foot" id="foot"></div>
+
+      <!-- Scheda Home -->
+      <div id="tabHome">
+        <div id="content">
+          <div class="card"><div class="muted">Scegli il tuo nome per iniziare.</div></div>
+        </div>
+        <div class="foot" id="foot"></div>
+      </div>
+
+      <!-- Scheda Cambi -->
+      <div id="tabCambi" hidden>
+        <div class="card">
+          <h2 class="section">Nuova richiesta di cambio</h2>
+          <label>Cedo il mio turno</label>
+          <select id="cedePick" onchange="if(this.value){document.getElementById('cede').value=this.value;}">
+            <option value="">— pesca dai tuoi turni —</option>
+          </select>
+          <input id="cede" placeholder="es. SA 09/08 · DEA / MATTINA">
+          <label>Con chi (anche altri anni)</label>
+          <input id="conChi" placeholder="es. Rossi (2° anno)">
+          <label>Ricevo il suo turno</label>
+          <input id="riceve" placeholder="es. DO 10/08 · notte">
+          <label>Nota (facoltativa)</label>
+          <input id="nota" placeholder="">
+          <button class="wide" onclick="inviaCambio()">Invia richiesta</button>
+          <div id="cambioMsg" class="msg" hidden></div>
+        </div>
+        <div class="card">
+          <h2 class="section">Richieste registrate</h2>
+          <p class="muted" style="margin:0 0 8px">I rappresentanti spuntano "Fatto" nel foglio CAMBI.</p>
+          <div id="cambiList"><div class="muted">Carico…</div></div>
+        </div>
+      </div>
     </section>
 
     <div id="boot" class="card"><div class="muted"><span class="spin"></span> Avvio…</div></div>

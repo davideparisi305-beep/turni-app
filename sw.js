@@ -2,7 +2,7 @@
  * Strategia: cache-first per i file dell'app (shell), network-only per l'API
  * (dati sempre freschi). Cambia CACHE quando aggiorni i file per forzare
  * l'aggiornamento sui telefoni già installati. */
-const CACHE = 'turni3-shell-v2';
+const CACHE = 'turni3-shell-v3';
 const SHELL = [
   '.',
   'index.html',

@@ -8,6 +8,7 @@ var API_BASE = 'https://script.google.com/macros/s/AKfycbzj4wCgMtsKajOdXttH7ghkX
 
 var K_CODE = 'turni3_code';
 var K_NOME = 'turni3_nome';
+var lastTurni = []; // ultimi turni caricati, per pre-riempire il cambio
 
 function el(id){ return document.getElementById(id); }
 function show(id, on){ el(id).hidden = !on; }
@@ -22,6 +23,21 @@ function api(action, params){
     if (params[k] != null) q += '&' + k + '=' + encodeURIComponent(params[k]);
   });
   return fetch(API_BASE + '?' + q, { method:'GET' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.ok === false && d.errore === 'CODICE'){
+        localStorage.removeItem(K_CODE);
+        throw { codice:true, messaggio: d.messaggio || 'Codice errato.' };
+      }
+      return d;
+    });
+}
+
+// Scrittura: POST con corpo-stringa e nessun header custom = richiesta
+// "semplice", niente preflight CORS verso Apps Script.
+function apiPost(action, payload){
+  var body = Object.assign({ action: action, codice: localStorage.getItem(K_CODE) || '' }, payload || {});
+  return fetch(API_BASE, { method:'POST', body: JSON.stringify(body) })
     .then(function(r){ return r.json(); })
     .then(function(d){
       if (d && d.ok === false && d.errore === 'CODICE'){
@@ -118,6 +134,7 @@ function render(d){
   html += '</div>';
 
   var t = (d.turni && d.turni.turni) || [];
+  lastTurni = t;
   html += '<div class="card"><h2 class="section">I tuoi prossimi turni</h2>';
   if (t.length){
     html += t.map(function(x){
@@ -147,6 +164,73 @@ function render(d){
   var st = d.stato || {};
   el('foot').textContent = 'Periodo ' + (st.periodo ? st.periodo.inizio + ' → ' + st.periodo.fine : '') +
     (st.ultimoAggiornamento ? ' · agg. ' + st.ultimoAggiornamento : '');
+}
+
+/* ---- Cambi 1-1 ---- */
+function tab(which){
+  var home = which === 'home';
+  show('tabHome', home); show('tabCambi', !home);
+  el('tabBtnHome').classList.toggle('active', home);
+  el('tabBtnCambi').classList.toggle('active', !home);
+  if (!home){ popolaCede(); caricaCambi(); }
+}
+
+function popolaCede(){
+  var sel = el('cedePick');
+  sel.innerHTML = '<option value="">— pesca dai tuoi turni —</option>' +
+    lastTurni.map(function(x){
+      return '<option>' + esc(x.etichetta + ' · ' + x.sala + ' / ' + x.turno) + '</option>';
+    }).join('');
+}
+
+function msgCambio(t, ok){
+  var m = el('cambioMsg'); m.textContent = t; m.hidden = false;
+  m.className = 'msg ' + (ok ? 'ok' : 'bad');
+}
+
+function inviaCambio(){
+  var richiedente = el('nome').value;
+  if (!richiedente){ msgCambio('Scegli prima il tuo nome nella scheda Home.', false); return; }
+  var payload = {
+    richiedente: richiedente,
+    conChi: el('conChi').value.trim(),
+    cede: el('cede').value.trim(),
+    riceve: el('riceve').value.trim(),
+    nota: el('nota').value.trim()
+  };
+  if (!payload.conChi){ msgCambio('Indica con chi fai il cambio.', false); return; }
+  if (!payload.cede && !payload.riceve){ msgCambio('Indica almeno un turno (che cedi o che ricevi).', false); return; }
+  msgCambio('Invio…', true);
+  apiPost('registraCambio', payload).then(function(d){
+    if (!d || d.ok === false){ msgCambio((d && d.messaggio) || 'Errore', false); return; }
+    msgCambio(d.messaggio || 'Richiesta registrata.', true);
+    el('conChi').value = ''; el('cede').value = ''; el('riceve').value = '';
+    el('nota').value = ''; el('cedePick').value = '';
+    caricaCambi();
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    msgCambio('Errore: ' + (e && e.messaggio ? e.messaggio : e), false);
+  });
+}
+
+function caricaCambi(){
+  el('cambiList').innerHTML = '<div class="muted"><span class="spin"></span> Carico…</div>';
+  api('cambi', {}).then(function(d){
+    var list = (d && d.cambi) || [];
+    if (!list.length){ el('cambiList').innerHTML = '<div class="muted">Nessuna richiesta ancora.</div>'; return; }
+    el('cambiList').innerHTML = list.map(function(c){
+      var badge = c.fatto ? '<span class="badge done">✅ Fatto</span>'
+                          : '<span class="badge todo">⏳ Da fare</span>';
+      var sw = (c.cede ? esc(c.cede) : '—') + '  →  ' + (c.riceve ? esc(c.riceve) : '—');
+      return '<div class="camb"><div class="h">' + esc(c.richiedente) + ' ↔ ' + esc(c.conChi) +
+        badge + '</div><div class="sw">' + sw + '</div>' +
+        (c.nota ? '<div class="meta">📝 ' + esc(c.nota) + '</div>' : '') +
+        '<div class="meta">' + esc(c.data) + '</div></div>';
+    }).join('');
+  }).catch(function(e){
+    if (e && e.codice){ vaiACodice(e.messaggio); return; }
+    el('cambiList').innerHTML = '<div class="msg bad">Errore nel caricare le richieste.</div>';
+  });
 }
 
 /* ---- Service worker + avvio ---- */
