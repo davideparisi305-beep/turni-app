@@ -34,6 +34,9 @@ h2.section{margin:0 0 10px;font-size:13px;text-transform:uppercase;
 .err{color:var(--crit);font-size:14px;margin-top:8px}
 input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;
   background:var(--card);color:var(--ink);font-size:16px;-webkit-appearance:none;margin-top:8px}
+/* iOS: NON togliere l'aspetto nativo ai campi data, altrimenti il calendario
+   non si apre. Ripristino l'appearance per input date/time. */
+input[type="date"],input[type="time"]{-webkit-appearance:auto;appearance:auto;min-height:46px}
 button{padding:12px 16px;border:0;border-radius:12px;background:var(--brand);
   color:#fff;font-size:15px;font-weight:600}
 button.wide{width:100%;margin-top:12px}

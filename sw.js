@@ -2,7 +2,7 @@
  * Strategia: cache-first per i file dell'app (shell), network-only per l'API
  * (dati sempre freschi). Cambia CACHE quando aggiorni i file per forzare
  * l'aggiornamento sui telefoni già installati. */
-const CACHE = 'turni3-shell-v4';
+const CACHE = 'turni3-shell-v5';
 const SHELL = [
   '.',
   'index.html',
@@ -31,14 +31,13 @@ self.addEventListener('fetch', (e) => {
   // Le chiamate all'API (Apps Script) non passano dalla cache: dati sempre live.
   if (url.hostname.indexOf('script.google') >= 0 || url.hostname.indexOf('googleusercontent') >= 0) return;
   if (e.request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
+  // NETWORK-FIRST per i file dell'app: gli aggiornamenti si vedono subito
+  // ricaricando. La cache serve solo da fallback offline.
   e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
-      // Aggiorna la cache dei file shell serviti dalla stessa origine.
-      if (res.ok && url.origin === self.location.origin) {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
-      }
+    fetch(e.request).then((res) => {
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
       return res;
-    }).catch(() => caches.match('index.html')))
+    }).catch(() => caches.match(e.request).then((hit) => hit || caches.match('index.html')))
   );
 });
